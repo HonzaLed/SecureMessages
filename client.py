@@ -46,6 +46,10 @@ def check(question, optionA, optionB):
     else:
         print("Unrecognized option, please try again!")
         return check(question, optionA, optionB)
+def toHex(bytes):
+    return bytes.hex()
+def fromHex(hex):
+    return bytes.fromhex(hex)
 
 
 try:
@@ -89,5 +93,6 @@ except FileNotFoundError:
         file.write(privKey.export_key('PEM'))
     print("Successfully wrote key to the file")
 file.close()
+pubKeyID = pubKey.export_key("DER").hex()
 print(privKey.export_key("PEM"))
 print(pubKey.export_key("PEM"))
