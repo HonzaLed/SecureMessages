@@ -3,3 +3,8 @@ __pycache__/*
 .vscode/*
 *.msg
 server/users.json
+client/__pycache__/*
+server/__pycache__/*
+sampleClient/*
+output/*
+tclient/*
