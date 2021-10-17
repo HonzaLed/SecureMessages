@@ -1,12 +1,13 @@
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from hashlib import sha512
+from time import sleep
 import requests
 import binascii
 import json
 
 ### ONLY IN DEV
-debug = False
+debug = True
 
 class bcolors:
     HEADER = '\033[95m'
@@ -172,8 +173,10 @@ if not com.check_same_user(pubKeyID):
     else:
         print("OK, registering...")
         nickname = input("Please enter nickname you want to use: ")
+        response = com.register(pubKeyID, nickname)
         if debug:
-            print("[DEBUG]",com.register(pubKeyID, nickname))
+            print("[DEBUG]",response)
+        sleep(0.5)
         print("Registered!")
 else:
     print("Found your account!")
@@ -193,6 +196,7 @@ def sendMsgWizard():
     i = 1
     for a in nicknames:
         print(str(i)+")",a)
+        i = i+1
     toIndex = int(input("Select one option: "))-1
     print("Selected",nicknames[toIndex], ", fetching user data...")
     user = com.get_user_by_nickname(nicknames[toIndex])

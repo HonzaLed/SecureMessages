@@ -8,10 +8,10 @@ import os
 app = Flask(__name__)
 
 try:
-    with open("users.json", "r"):
+    with open("users.json", "r") as file:
         pass
 except FileNotFoundError:
-    with open("users.json", "w"):
+    with open("users.json", "w") as file:
         file.write('{"users":[]}')
 class NullValueError(Exception):
     def __init__(self):
@@ -27,6 +27,16 @@ def get_user_file(pubKeyID):
         if user["pubKeyID"] == pubKeyID:
             return user["uuid"]
     newUuid = str(uuid.uuid4())
+    foundSame = False
+    ifContinue = False
+    while ifContinue!=True:
+        for user in users:
+            if user["uuid"] == newUuid:
+                foundSame = True
+        if foundSame:
+            newUuid = str(uuid.uuid4())
+        else:
+            ifContinue = True
     users.append({"pubKeyID":pubKeyID, "uuid":newUuid})
     userFJson["users"] = users
     usersF = open("users.json", "w")
@@ -92,6 +102,7 @@ def upload(pubKeyID):
                 with open(get_user_file(pubKeyID)+".msg", "r") as file:
                     fileContent = file.read()
             except FileNotFoundError:
+                print("File",get_user_file(pubKeyID)+".msg","not found", file=sys.stderr)
                 if nickname == None:
                     raise KeyError
                 fileContent = '{"status":"OK", "pubKeyID":"'+pubKeyID+'", "nickname":"'+nickname+'", "messages": [] }'
@@ -109,7 +120,6 @@ def upload(pubKeyID):
         except BaseException as err:
             return '{"status":"ERR", "error":"'+err+'"}'
     if request.method == "GET":
-        #return '{"pubKeyID":"'+pubKeyID+'", "all":"test"}'
         try:
             with open(get_user_file(pubKeyID)+".msg", "r") as file:
                 return file.read()
@@ -120,4 +130,4 @@ def upload(pubKeyID):
 
 
 if __name__ == '__main__':
-    app.run(debug = True)
+    app.run(debug = True, host="0.0.0.0")
