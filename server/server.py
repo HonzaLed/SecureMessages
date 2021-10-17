@@ -27,7 +27,7 @@ def upload(pubKeyID):
             msg = str(data["msg"])
             sign = str(data["sign"])
             frmPubKeyID = str(data["frmPubKeyID"]) # rfm stands for from, so frmPubKeyID is sender public key ID
-            msgTemplate = json.loads('{"msg":"", "sign":""}')
+            msgTemplate = json.loads('{"msg":"", "sign":"", "frmPubKeyID":""}')
             print("[DEBUG]",msg, file=sys.stderr)
             print("[DEBUG]",pubKeyID, file=sys.stderr)
             try:
@@ -39,10 +39,11 @@ def upload(pubKeyID):
             msgObj = msgTemplate
             msgObj["msg"] = msg
             msgObj["sign"] = sign
+            msgObj["frmPubKeyID"] = frmPubKeyID
             fileJson["messages"].append(msgObj)
             with open(pubKeyID+".msg", "w") as file:
                 file.write(json.dumps(fileJson))
-            return '{"status":"OK", "msg":"'+msg+'", "sign":"'+sign+'", "pubKeyID":"'+pubKeyID+'"}'
+            return '{"status":"OK", "msg":"'+msg+'", "sign":"'+sign+'", "pubKeyID":"'+pubKeyID+'", "frmPubKeyID":"'+frmPubKeyID+'"}'
         except KeyError:
             return '{"status":"ERR", "error":"RequestKeyNotFound"}'
         #except error as err:

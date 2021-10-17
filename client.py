@@ -4,6 +4,8 @@ from Crypto.Cipher import PKCS1_OAEP
 from hashlib import sha512
 import binascii
 
+debug = True
+
 class Cipher:
     def __init__(self, privKey, pubKey):
         self.privKey = privKey
@@ -85,14 +87,17 @@ except FileNotFoundError:
     pubKey = privKey.public_key()
     print("Generated new key, saving to the file")
     file = open("client.pem", "wb")
-    if check("Do you want to secure file with the password(strongly recomended) (y/n):", "y", "n"):
+    if check("Do you want to secure file with the password(strongly recomended, and not working, select N) (y/n):", "y", "n"):
         psswd = input("Create password for the file with the key: ")
         print("[DEBUG]",psswd)
         file.write(privKey.export_key('PEM', psswd))
     else:
         file.write(privKey.export_key('PEM'))
-    print("Successfully wrote key to the file")
+    print("Successfully wrote key to the file!")
 file.close()
 pubKeyID = pubKey.export_key("DER").hex()
-print(privKey.export_key("PEM"))
-print(pubKey.export_key("PEM"))
+if debug:
+    print("[DEBUG]",privKey.export_key("PEM"))
+    print("[DEBUG]",pubKey.export_key("PEM"))
+
+
