@@ -1,23 +1,38 @@
-from typing import final
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from hashlib import sha512
+import requests
 import binascii
+import json
 
-debug = True
+### ONLY IN DEV
+debug = False
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 class Cipher:
     def __init__(self, privKey, pubKey):
         self.privKey = privKey
         self.pubKey = pubKey
         self.decryptor = PKCS1_OAEP.new(privKey)
-    def sign(self, msg, privKey):
+    def sign(self, msg, privKey=None):
         try:
             msg = msg.encode()
         except:
             pass
         hash = int.from_bytes(sha512(msg).digest(), byteorder='big')
-        return pow(hash, privKey.d, privKey.n)
+        if privKey==None:
+            return pow(hash, self.privKey.d, self.privKey.n)
+        else:
+            return pow(hash, privKey.d, privKey.n)
     def verify(self, msg, signature, pubKey):
         try:
             msg = msg.encode()
@@ -38,6 +53,43 @@ class Cipher:
         except:
             pass
         return self.decryptor.decrypt(ciphertext)
+
+class ComHandler:
+    def __init__(self, address, https=False):
+        if https:
+            self.address = "https://"+str(address)
+        else:
+            self.address = "http://"+str(address)
+    def get_users(self):
+        return json.loads(requests.get(self.address+"/users").text)["users"]
+    def get_user(self, pubKeyID):
+        return json.loads(requests.get(self.address+"/upload/"+str(pubKeyID)).text)
+    def send(self, msg, sign, toPubKeyID, frmPubKeyID):
+        data = {"msg":msg, "sign":sign, "frmPubKeyID":frmPubKeyID}
+        return json.loads(requests.post(self.address+"/upload/"+str(toPubKeyID), json=data).text)
+    def register(self, pubKeyID, nickname):
+        data = {"pubKeyID":pubKeyID, "nickname":nickname}
+        return json.loads(requests.post(self.address+"/register", json=data).text)
+    def check_same_user(self, pubKeyID):
+        users = self.get_users()
+        for user in users:
+            if user["pubKeyID"] == pubKeyID:
+                return True
+        return False
+    def get_nickname(self, pubKeyID):
+        return self.get_user(pubKeyID)["nickname"]
+    def get_nicknames(self):
+        nicknames = []
+        for user in self.get_users():
+            nicknames.append(self.get_nickname(user["pubKeyID"]))
+        return nicknames
+    def get_user_by_nickname(self, nickname):
+        """Return user json by provided nickname"""
+        for user in self.get_users():
+            user = self.get_user(user["pubKeyID"])
+            if user["nickname"] == nickname:
+                return user
+        return None
 
 def check(question, optionA, optionB):
     msg = input(question)
@@ -65,7 +117,8 @@ try:
         while attemps < 4:
             psswd = input("Please enter pasword: ")
             try:
-                print("[DEBUG]",psswd)
+                if debug:
+                    print("[DEBUG]",psswd)
                 privKey = RSA.import_key(file.read(), psswd)
                 break
             except ValueError as err:
@@ -89,15 +142,108 @@ except FileNotFoundError:
     file = open("client.pem", "wb")
     if check("Do you want to secure file with the password(strongly recomended, and not working, select N) (y/n):", "y", "n"):
         psswd = input("Create password for the file with the key: ")
-        print("[DEBUG]",psswd)
+        if debug:
+            print("[DEBUG]",psswd)
         file.write(privKey.export_key('PEM', psswd))
     else:
         file.write(privKey.export_key('PEM'))
     print("Successfully wrote key to the file!")
 file.close()
 pubKeyID = pubKey.export_key("DER").hex()
+cipher = Cipher(privKey, pubKey)
 if debug:
     print("[DEBUG]",privKey.export_key("PEM"))
     print("[DEBUG]",pubKey.export_key("PEM"))
 
+### DEV SERVER
+#server = "127.0.0.1:5000" # localhost only for testing
+#useHttps = False
+### PRODUCTION SERVER
+server = "SecureMessagingServer.honzaled.repl.co"
+useHttps = True
 
+print("Connecting to server...")
+com = ComHandler(server, https=useHttps)
+print("Connected!")
+if not com.check_same_user(pubKeyID):
+    if not check("Your account was not found on the server, do you want to register on the server "+server+"? (y/n): ", "y", "n"):
+        print("Without registering, app can't continue, exiting...")
+        exit()
+    else:
+        print("OK, registering...")
+        nickname = input("Please enter nickname you want to use: ")
+        if debug:
+            print("[DEBUG]",com.register(pubKeyID, nickname))
+        print("Registered!")
+else:
+    print("Found your account!")
+print("Your nickname:",com.get_nickname(pubKeyID))
+
+
+def menu():
+    print("What do you want to do?")
+    print("1) Send a message")
+    print("2) View received messages")
+    print("3) Exit")
+    return int(input("Select one option (1/2/3): "))
+
+def sendMsgWizard():
+    nicknames = com.get_nicknames()
+    print("Select person to send message to")
+    i = 1
+    for a in nicknames:
+        print(str(i)+")",a)
+    toIndex = int(input("Select one option: "))-1
+    print("Selected",nicknames[toIndex], ", fetching user data...")
+    user = com.get_user_by_nickname(nicknames[toIndex])
+    userKey = RSA.import_key(fromHex(user["pubKeyID"]))
+    print("User data loaded!")
+    if debug:
+        print("[DEBUG]", userKey.export_key())
+    msg = input("Enter your message to send: ")
+    cipherText = cipher.encrypt(msg, userKey)
+    sign = cipher.sign(cipherText)
+    response = com.send(cipherText.hex(), sign, user["pubKeyID"], pubKeyID)
+    if response["status"] == "OK":
+        print("Successfully sent!")
+    else:
+        print("Error",response["error"])
+    
+
+
+
+
+def showReceivedMsgs():
+    print("Fetching messages...")
+    userObj = com.get_user(pubKeyID)
+    messages = userObj["messages"]
+    for message in messages:
+        ciphertextHex = message["msg"]
+        sign = int(message["sign"])
+        frmPubKeyID = message["frmPubKeyID"]
+        frmPubKey = RSA.import_key(bytes.fromhex(frmPubKeyID))
+        frmNickname = com.get_nickname(frmPubKeyID)
+        ciphertext = bytes.fromhex(ciphertextHex)
+        try:
+            msg = cipher.decrypt(ciphertext).decode()
+            try:
+                ver = cipher.verify(ciphertext, sign, frmPubKey)
+            except BaseException as err:
+                print(bcolors.FAIL+"Verification error",err,bcolors.ENDC)
+            if ver:
+                print(bcolors.OKGREEN+"Message from", str(frmNickname)+":",msg,bcolors.ENDC)
+            else:
+                print(bcolors.FAIL+"Bad message from", str(frmNickname)+":",msg,bcolors.ENDC)
+        except BaseException as err:
+            print(bcolors.FAIL+"Decrypting error",err,bcolors.ENDC)
+
+
+while True:
+    cmd = menu()
+    if cmd == 1:
+        sendMsgWizard()
+    elif cmd == 2:
+        showReceivedMsgs()
+    elif cmd == 3:
+        print("Exiting...")
+        exit()
