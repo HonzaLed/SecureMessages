@@ -49,4 +49,10 @@ function PrintMsgsToConsole() {
     });
 }
 
+function addMessage(msg, sender) {
+    var a = a = document.getElementById("chat").children[0];
+    var isSender = a.children[a.childElementCount-1].className.search("sender") > -1;
+
+}
+
 console.log(getMessages());
