@@ -1,10 +1,11 @@
-/*#accounts {
-    position: sticky;
-    top: 0;
-}*/
+.fixed-bottom {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+}
 
-.sticky {
-    position: sticky;
-    top: 0px;
-    padding: 10px 0px;
+.input-box {
+    position: fixed;
+    right: 0;
+    bottom: 0;
 }
