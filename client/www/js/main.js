@@ -33,12 +33,6 @@ function getMsgsHandler(obj) {
     });
 }
 
-function displayMsgs() {
-    msgsDiv = document.getElementById("messages");
-    removeChilds(msgsDiv);
-    getMessages();
-    msgsJson.messages.forEach((msg)=>{console.log("msg "+msg);});
-}
 
 function PrintMsgsToConsole() {
     messages.users.forEach((usr) => {
@@ -49,10 +43,61 @@ function PrintMsgsToConsole() {
     });
 }
 
-function addMessage(msg, sender) {
-    var a = a = document.getElementById("chat").children[0];
-    var isSender = a.children[a.childElementCount-1].className.search("sender") > -1;
+function msgToNode(msg, sender) {
+    if (sender == "me") {
+        var frag = document.createRange().createContextualFragment(
+            '<li class="clearfix"><div class="message my-message float-right">'+msg+'</div></li>'
+        );
+        console.log(frag);
+    } else {
+        var frag = document.createRange().createContextualFragment(
+            '<li class="clearfix"><div class="message other-message ">'+msg+'</div></li>'
+        );
+        console.log(frag);
+    }
+    return frag
+}
 
+function addMessage(msg, sender) {
+    var messages = document.getElementById("messages");
+    messages.appendChild(msgToNode(msg, sender));
+}
+
+function Autoscroll() {
+    (function() {
+        var intervalObj = null;
+        var retry = 0;
+        var clickHandler = function() { 
+            console.log("Clicked; stopping autoscroll");
+            clearInterval(intervalObj);
+            document.body.removeEventListener("click", clickHandler);
+        }
+        function scrollDown() { 
+            var scrollHeight = document.body.scrollHeight,
+                scrollTop = document.body.scrollTop,
+                innerHeight = window.innerHeight,
+                difference = (scrollHeight - scrollTop) - innerHeight
+
+            if (difference > 0) { 
+                window.scrollBy(0, difference);
+                if (retry > 0) { 
+                    retry = 0;
+                }
+                console.log("scrolling down more");
+            } else {
+                if (retry >= 3) {
+                    console.log("reached bottom of page; stopping");
+                    clearInterval(intervalObj);
+                    document.body.removeEventListener("click", clickHandler);
+                } else {
+                    console.log("[apparenty] hit bottom of page; retrying: " + (retry + 1));
+                    retry++;
+                }
+            }
+        }
+        document.body.addEventListener("click", clickHandler);
+        intervalObj = setInterval(scrollDown, 1000);
+    })();
 }
 
 console.log(getMessages());
