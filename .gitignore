@@ -5,6 +5,4 @@ __pycache__/*
 server/users.json
 client/__pycache__/*
 server/__pycache__/*
-sampleClient/*
-output/*
-tclient/*
+client-test.py

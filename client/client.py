@@ -7,7 +7,7 @@ import binascii
 import json
 
 ### ONLY IN DEV
-debug = False
+debug = True
 
 class bcolors:
     HEADER = '\033[95m'
@@ -240,7 +240,6 @@ def showReceivedMsgs():
                 print(bcolors.FAIL+"Bad message from", str(frmNickname)+":",msg,bcolors.ENDC)
         except BaseException as err:
             print(bcolors.FAIL+"Decrypting error",err,bcolors.ENDC)
-
 
 while True:
     cmd = menu()
