@@ -1,5 +1,5 @@
-.fixed-bottom {
-    position: fixed;
+.sticky-bottom {
+    position: sticky;
     bottom: 0;
     width: 100%;
 }
@@ -7,5 +7,14 @@
 .input-box {
     position: fixed;
     right: 0;
-    bottom: 0;
+    bottom: 40px;
 }
+
+.right-side {
+    display: block;
+    left: 25%;
+}
+
+/*.discussion {
+    bottom: 8%;
+}*/
