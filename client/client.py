@@ -184,7 +184,7 @@ if not com.check_same_user(pubKeyID):
         print("Registered!")
 else:
     print("Found your account!")
-print("Your nickname:",com.get_nickname(pubKeyID))
+print("Logged in as",com.get_nickname(pubKeyID))
 
 
 def menu():
@@ -238,9 +238,9 @@ def getReceivedMsgs() -> str:
                 #print(bcolors.FAIL+"Verification error",err,bcolors.ENDC)
             if ver:
                 #print(bcolors.OKGREEN+"Message from", str(frmNickname)+":",msg,bcolors.ENDC)
-                returnArray["messages"].append({"status":"VEROK", "senderNickname":str(frmNicknme), "msg":msg})
+                returnArray["messages"].append({"status":"VEROK", "senderNickname":str(frmNickname), "msg":msg})
             else:
-                returnArray["messages"].append({"status":"VERERR", "errCode":ver, "senderNickname":str(frmNicknme), "msg":msg})
+                returnArray["messages"].append({"status":"VERERR", "errCode":ver, "senderNickname":str(frmNickname), "msg":msg})
                 #print(bcolors.FAIL+"Bad message from", str(frmNickname)+":",msg,bcolors.ENDC)
         except BaseException as err:
             pass
@@ -284,4 +284,4 @@ def main():
             exit()
 
 #eel.spawn(main)
-eel.start("index.html")
+eel.start("index.html", port=0)

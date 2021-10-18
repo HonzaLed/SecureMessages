@@ -13,6 +13,7 @@ function removeChilds(node) {
 }
 
 var msgsJson;
+var messages = {"users":[]};
 async function getMessages(response=undefined) {
     let n = await eel.getReceivedMsgs()();
     getMsgsHandler(n);
@@ -21,6 +22,15 @@ async function getMessages(response=undefined) {
 function getMsgsHandler(obj) {
     console.log("Got "+obj+" from python!");
     msgsJson = JSON.parse(obj);
+    msgsJson.messages.forEach( (msg) => {
+        var nickname = msg.senderNickname;
+        var user = messages.users.find( (usr)=>{if (usr.nickname == nickname){return true}});
+        if (typeof(user) != "undefined") {
+            user.messages.push(msg);
+        } else {
+            messages.users.push( {"nickname":nickname, "messages":[msg]} )
+        }
+    });
 }
 
 function displayMsgs() {
@@ -28,6 +38,15 @@ function displayMsgs() {
     removeChilds(msgsDiv);
     getMessages();
     msgsJson.messages.forEach((msg)=>{console.log("msg "+msg);});
+}
+
+function PrintMsgsToConsole() {
+    messages.users.forEach((usr) => {
+        console.log("Printing messages from "+usr.nickname);
+        usr.messages.forEach((msg) => {
+            console.log(msg.senderNickname+": "+msg.msg);
+        });
+    });
 }
 
 console.log(getMessages());

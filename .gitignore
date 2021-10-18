@@ -6,3 +6,5 @@ server/users.json
 client/__pycache__/*
 server/__pycache__/*
 client-test.py
+client/testwww/*
+client/testwww/
