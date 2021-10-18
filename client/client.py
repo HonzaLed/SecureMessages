@@ -2,12 +2,16 @@ from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 from hashlib import sha512
 from time import sleep
+from pkg_resources import parse_version
 import requests
 import binascii
 import json
+import eel
+eel.init("www")
+
 
 ### ONLY IN DEV
-debug = True
+debug = False
 
 class bcolors:
     HEADER = '\033[95m'
@@ -213,9 +217,35 @@ def sendMsgWizard():
     else:
         print("Error",response["error"])
     
-
-
-
+@eel.expose()
+def getReceivedMsgs() -> str:
+    returnArray = {"messages":[]}
+    userObj = com.get_user(pubKeyID)
+    messages = userObj["messages"]
+    for message in messages:
+        ciphertextHex = message["msg"]
+        sign = int(message["sign"])
+        frmPubKeyID = message["frmPubKeyID"]
+        frmPubKey = RSA.import_key(bytes.fromhex(frmPubKeyID))
+        frmNickname = com.get_nickname(frmPubKeyID)
+        ciphertext = bytes.fromhex(ciphertextHex)
+        try:
+            msg = cipher.decrypt(ciphertext).decode()
+            try:
+                ver = cipher.verify(ciphertext, sign, frmPubKey)
+            except BaseException as err:
+                ver = err
+                #print(bcolors.FAIL+"Verification error",err,bcolors.ENDC)
+            if ver:
+                #print(bcolors.OKGREEN+"Message from", str(frmNickname)+":",msg,bcolors.ENDC)
+                returnArray["messages"].append({"status":"VEROK", "senderNickname":str(frmNicknme), "msg":msg})
+            else:
+                returnArray["messages"].append({"status":"VERERR", "errCode":ver, "senderNickname":str(frmNicknme), "msg":msg})
+                #print(bcolors.FAIL+"Bad message from", str(frmNickname)+":",msg,bcolors.ENDC)
+        except BaseException as err:
+            pass
+            #print(bcolors.FAIL+"Decrypting error",err,bcolors.ENDC)
+    return json.dumps(returnArray)
 
 def showReceivedMsgs():
     print("Fetching messages...")
@@ -241,12 +271,17 @@ def showReceivedMsgs():
         except BaseException as err:
             print(bcolors.FAIL+"Decrypting error",err,bcolors.ENDC)
 
-while True:
-    cmd = menu()
-    if cmd == 1:
-        sendMsgWizard()
-    elif cmd == 2:
-        showReceivedMsgs()
-    elif cmd == 3:
-        print("Exiting...")
-        exit()
+def main():
+    while True:
+        eel.sleep(1)
+        cmd = menu()
+        if cmd == 1:
+            sendMsgWizard()
+        elif cmd == 2:
+            showReceivedMsgs()
+        elif cmd == 3:
+            print("Exiting...")
+            exit()
+
+#eel.spawn(main)
+eel.start("index.html")
