@@ -7,7 +7,7 @@ import binascii
 import json
 
 ### ONLY IN DEV
-debug = True
+debug = False
 
 class bcolors:
     HEADER = '\033[95m'
@@ -101,11 +101,13 @@ def check(question, optionA, optionB):
     else:
         print("Unrecognized option, please try again!")
         return check(question, optionA, optionB)
-def toHex(bytes):
-    return bytes.hex()
-def fromHex(hex):
-    return bytes.fromhex(hex)
-
+def checkInt(question):
+    answer = input(question)
+    try:
+        return int(answer)
+    except:
+        print("Please enter a number")
+        return checkInt(question)
 
 try:
     file = open("client.pem", "r")
@@ -184,20 +186,23 @@ print("Your nickname:",com.get_nickname(pubKeyID))
 
 
 def menu():
+    print("")
     print("What do you want to do?")
     print("1) Send a message")
     print("2) View received messages")
     print("3) Exit")
-    return int(input("Select one option (1/2/3): "))
+    return checkInt("Select one option (1/2/3): ")
 
 def sendMsgWizard():
     nicknames = com.get_nicknames()
-    print("Select person to send message to")
+    print("Select person to send message to (to cancel type 0)")
     i = 1
     for a in nicknames:
         print(str(i)+")",a)
         i = i+1
-    toIndex = int(input("Select one option: "))-1
+    toIndex = checkInt("Select one option: ")-1
+    if toIndex == -1:
+        return None
     print("Selected",nicknames[toIndex], ", fetching user data...")
     user = com.get_user_by_nickname(nicknames[toIndex])
     userKey = RSA.import_key(fromHex(user["pubKeyID"]))
@@ -205,13 +210,25 @@ def sendMsgWizard():
     if debug:
         print("[DEBUG]", userKey.export_key())
     msg = input("Enter your message to send: ")
-    cipherText = cipher.encrypt(msg, userKey)
-    sign = cipher.sign(cipherText)
-    response = com.send(cipherText.hex(), sign, user["pubKeyID"], pubKeyID)
-    if response["status"] == "OK":
-        print("Successfully sent!")
-    else:
-        print("Error",response["error"])
+    try:
+        cipherText = cipher.encrypt(msg, userKey)
+        try:
+            sign = cipher.sign(cipherText)
+            try:
+                response = com.send(cipherText.hex(), sign, user["pubKeyID"], pubKeyID)
+                if response["status"] == "OK":
+                    print("Successfully sent!")
+                else:
+                    print("Error",response["error"])
+            except:
+                print("Error sending message, check your internet connection")
+        except:
+            print("Message signing error")
+    except ValueError as err:
+        if "Plaintext is too long" in str(err):
+            print("Encryption error, your message is too long")
+    except:
+        print("Unknown encryption error")
     
 
 
@@ -238,6 +255,7 @@ def showReceivedMsgs():
                 print(bcolors.OKGREEN+"Message from", str(frmNickname)+":",msg,bcolors.ENDC)
             else:
                 print(bcolors.FAIL+"Bad message from", str(frmNickname)+":",msg,bcolors.ENDC)
+            print("")
         except BaseException as err:
             print(bcolors.FAIL+"Decrypting error",err,bcolors.ENDC)
 
