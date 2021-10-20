@@ -108,7 +108,10 @@ def checkInt(question):
     except:
         print("Please enter a number")
         return checkInt(question)
-
+def fromHex(hex):
+    return bytes.fromhex(hex)
+def toHex(bytes):
+    return bytes.hex()
 try:
     file = open("client.pem", "r")
     print("Found key file, trying to load...")
