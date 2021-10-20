@@ -137,7 +137,7 @@ try:
 except FileNotFoundError:
     if not check("No key was found in current directory, do you want to generate new key? (Y/N): ","y","n"):
         exit()
-    privKey = RSA.generate(1024)
+    privKey = RSA.generate(3072)
     pubKey = privKey.public_key()
     print("Generated new key, saving to the file")
     file = open("client.pem", "wb")
