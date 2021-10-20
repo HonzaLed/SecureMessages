@@ -5,6 +5,7 @@ from time import sleep
 import requests
 import binascii
 import json
+import sys
 
 ### ONLY IN DEV
 debug = False
@@ -135,13 +136,13 @@ try:
             print("Successfully loaded key from file!")
         else:
             print("You entered wrong password 3 times, program is exiting, please restart program and try again!")
-            exit()
+            sys.exit(0)
     finally:
         print("Successfully loaded key from file!")
     pubKey = privKey.public_key()
 except FileNotFoundError:
     if not check("No key was found in current directory, do you want to generate new key? (Y/N): ","y","n"):
-        exit()
+        sys.exit(0)
     privKey = RSA.generate(3072)
     pubKey = privKey.public_key()
     print("Generated new key, saving to the file")
@@ -172,9 +173,9 @@ print("Connecting to server...")
 com = ComHandler(server, https=useHttps)
 print("Connected!")
 if not com.check_same_user(pubKeyID):
-    if not check("Your account was not found on the server, do you want to register on the server "+server+"? (y/n): ", "y", "n"):
+    if not check("Your account was not found on the server, do you want to register on the server ? (y/n): ", "y", "n"):
         print("Without registering, app can't continue, exiting...")
-        exit()
+        sys.exit(0)
     else:
         print("OK, registering...")
         nickname = input("Please enter nickname you want to use: ")
@@ -270,4 +271,4 @@ while True:
         showReceivedMsgs()
     elif cmd == 3:
         print("Exiting...")
-        exit()
+        sys.exit(0)

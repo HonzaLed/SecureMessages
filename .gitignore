@@ -5,4 +5,5 @@ __pycache__/*
 server/users.json
 client/__pycache__/*
 server/__pycache__/*
-client-test.py
+*auto-py-to-exe*
+client/testwww/*
