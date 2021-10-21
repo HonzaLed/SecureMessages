@@ -4,6 +4,8 @@ from hashlib import sha512
 from time import sleep
 import requests
 import binascii
+import argparse
+import random
 import json
 import sys
 
@@ -57,11 +59,45 @@ class Cipher:
         return self.decryptor.decrypt(ciphertext)
 
 class ComHandler:
-    def __init__(self, address, https=False):
-        if https:
-            self.address = "https://"+str(address)
+    def __init__(self, address, skipCheck):
+        ### URL CHECK
+        #### PROTOCOL CHECK (http/https)
+        # if address has no http:// or https://, then add it
+        if address[0:7] != "http://" and address[:8] != "https://":
+            address = "http://"+address
+        try:
+            r=requests.get(address)
+        except requests.exceptions.ConnectionError as err:
+            print(bcolors.FAIL+"Connection error, please try again",bcolors.ENDC)
+            sys.exit(1)
+        #set url address
+        self.address = r.url
+        #### SERVER CHECK (if running correct software)
+        if skipCheck:
+            return None
+        randomBytes = bytes(random.getrandbits(8) for _ in range(32)).hex()
+        hash = int.from_bytes(sha512(randomBytes.encode()).digest(), byteorder='big')
+        try:
+            response = requests.get(self.address+"/vrf/"+randomBytes)
+        except requests.exceptions.ConnectionError as err:
+            print(bcolors.FAIL+"Failed connecting to the server, check if server is running the right software",bcolors.ENDC)
+            sys.exit(1)
+        try:
+            data=json.loads(response.text)
+        except:
+            print(bcolors.FAIL+"Server check failed, check if server is running the right software",bcolors.ENDC)
+            sys.exit(1)
+        if data["status"] == "OK":
+            if hash == data["hash"]:
+                #check passed
+                if debug:
+                    print("[DEBUG] Server confirmed!")
+            else:
+                if debug:
+                    print("[DEBUG] Server responded but error "+data["error"])
         else:
-            self.address = "http://"+str(address)
+            print(bcolors.FAIL+"Detected server error, try restarting server",bcolors.ENDC)
+            sys.exit(1)
     def get_users(self):
         return json.loads(requests.get(self.address+"/users").text)["users"]
     def get_user(self, pubKeyID):
@@ -115,6 +151,26 @@ def fromHex(hex):
     return bytes.fromhex(hex)
 def toHex(bytes):
     return bytes.hex()
+
+### ARGPARSE
+
+parser = argparse.ArgumentParser(description='Client for secure communication service')
+
+#### SERVER
+
+##### DEV SERVER
+#parser.add_argument("-s", "--server", action="store", dest="server", default="SecureMessagingServer.honzaled.repl.co:5000", type=str, help="Server to connect to (for example example.com, example.com:8080, 127.0.0.1:5000)")
+
+##### PRODUCTION SERVER
+parser.add_argument("-s", "--server", action="store", dest="server", default="SecureMessagingServer.honzaled.repl.co", type=str, help="Server to connect to (for example example.com, example.com:8080, 127.0.0.1:5000)")
+
+#### CHECK SERVER
+parser.add_argument("-nc", "--no-check", action="store_true", dest="check", help="Skip server check")
+
+arguments = parser.parse_args()
+server = arguments.server
+
+### MAIN
 try:
     file = open("client.pem", "r")
     print("Found key file, trying to load...")
@@ -164,16 +220,8 @@ if debug:
     print("[DEBUG]",privKey.export_key("PEM"))
     print("[DEBUG]",pubKey.export_key("PEM"))
 
-### DEV SERVER
-#server = "127.0.0.1:5000" # localhost only for testing
-#useHttps = False
-
-### PRODUCTION SERVER
-server = "SecureMessagingServer.honzaled.repl.co"
-useHttps = True
-
 print("Connecting to server...")
-com = ComHandler(server, https=useHttps)
+com = ComHandler(server, arguments.check)
 print("Connected!")
 if not com.check_same_user(pubKeyID):
     if not check("Your account was not found on the server, do you want to register on the server ? (y/n): ", "y", "n"):

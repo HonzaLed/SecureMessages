@@ -1,12 +1,13 @@
-from logging import error
-from flask import Flask
-from flask import request
-from hashlib import sha512
 from Crypto.PublicKey import RSA
+from hashlib import sha512
+from flask import request
+from flask import Flask
+import argparse
 import json
 import uuid
 import sys
 import os
+
 app = Flask(__name__)
 
 def verify(msg, signature, pubKey):
@@ -161,6 +162,16 @@ def upload(pubKeyID):
         except BaseException as err:
             return '{"status":"ERR", "error":"'+err+'"}'
 
+@app.route("/vrf/<randomBytes>")
+def vrf(randomBytes):
+    try:
+        hash = int.from_bytes(sha512(randomBytes.encode()).digest(), byteorder='big')
+        return '{"status":"OK", "hash":'+str(hash)+'}', 200
+    except BaseException as err:
+        return json.dumps({"status":"ERR", "error":str(err)}), 400
 
 if __name__ == '__main__':
-    app.run(debug = True, host="0.0.0.0")
+    parser = argparse.ArgumentParser(description='Server of secure communication service')
+    parser.add_argument("-p", "--port", action="store", dest="port", default="5000", type=int, help="Port to server run on")
+    arguments = parser.parse_args()
+    app.run(debug = True, host="0.0.0.0", port=arguments.port)
