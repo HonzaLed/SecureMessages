@@ -92,6 +92,8 @@ class ComHandler:
             if user["nickname"] == nickname:
                 return user
         return None
+    def deleteMessageById(self,msgID, pubKeyID, sign):
+        return requests.delete(self.address+"/delete/"+str(pubKeyID)+"/"+str(msgID)+"/"+str(sign))
 
 def check(question, optionA, optionB):
     msg = input(question)
@@ -165,6 +167,7 @@ if debug:
 ### DEV SERVER
 #server = "127.0.0.1:5000" # localhost only for testing
 #useHttps = False
+
 ### PRODUCTION SERVER
 server = "SecureMessagingServer.honzaled.repl.co"
 useHttps = True
@@ -194,8 +197,9 @@ def menu():
     print("What do you want to do?")
     print("1) Send a message")
     print("2) View received messages")
-    print("3) Exit")
-    return checkInt("Select one option (1/2/3): ")
+    print("3) Delete messages")
+    print("4) Exit")
+    return checkInt("Select one option (1/2/3/4): ")
 
 def sendMsgWizard():
     nicknames = com.get_nicknames()
@@ -221,27 +225,58 @@ def sendMsgWizard():
             try:
                 response = com.send(cipherText.hex(), sign, user["pubKeyID"], pubKeyID)
                 if response["status"] == "OK":
-                    print("Successfully sent!")
+                    print(bcolors.OKGREEN, "Successfully sent!", bcolors.ENDC)
                 else:
-                    print("Error",response["error"])
+                    print(bcolors.FAIL, "Error",response["error"], bcolors.ENDC)
             except:
-                print("Error sending message, check your internet connection")
+                print(bcolors.FAIL, "Error sending message, check your internet connection", bcolors.ENDC)
         except:
-            print("Message signing error")
+            print(bcolors.FAIL, "Message signing error, please try again", bcolors.ENDC)
     except ValueError as err:
         if "Plaintext is too long" in str(err):
-            print("Encryption error, your message is too long")
+            print(bcolors.FAIL, "Encryption error, your message is too long", bcolors.ENDC)
     except:
-        print("Unknown encryption error")
+        print(bcolors.FAIL, "Unknown encryption error, please try again", bcolors.ENDC)
     
 
 
+def deleteMessagesWizard():
+    deletions = 0
+    print("Your messages")
+    showReceivedMsgs(showIndex=True)
+    usrInput = input("Enter ID of messages you want to delete, 0 for cancel (select multiple separated by comma, for example 1,2,4): ")
+    if usrInput == "0":
+        return None
+    messagesIDs = usrInput.split(",")
+    try:
+        i = 0
+        for item in messagesIDs:
+            messagesIDs[i] = int(item)
+            i = i+1
+    except TypeError:
+        print("You didn't entered numbers, returning to main menu")
+    try:
+        for i in messagesIDs:
+            if debug:
+                print("[DEBUG] deleting message",i)
+            msgID = (i-1)-deletions
+            sign = cipher.sign(pubKeyID+str(msgID))
+            response = com.deleteMessageById(msgID, pubKeyID, sign)
+            if debug:
+                print(response.text)
+            if response.status_code == 200:
+                deletions = deletions+1
+                print(bcolors.OKGREEN, "Successfully deleted!", bcolors.ENDC)
+            else:
+                print(bcolors.FAIL, "Error", json.loads(response.text)["error"], bcolors.ENDC)
+    except BaseException as err:
+        print("Error",err)
 
 
-def showReceivedMsgs():
-    print("Fetching messages...")
+def showReceivedMsgs(showIndex=False):
     userObj = com.get_user(pubKeyID)
     messages = userObj["messages"]
+    i = 1
     for message in messages:
         ciphertextHex = message["msg"]
         sign = int(message["sign"])
@@ -254,21 +289,31 @@ def showReceivedMsgs():
             try:
                 ver = cipher.verify(ciphertext, sign, frmPubKey)
             except BaseException as err:
-                print(bcolors.FAIL+"Verification error",err,bcolors.ENDC)
+                print(bcolors.FAIL+"Verification error (maybe fake message?) on message "+msg+" from "+frmNickname,err,bcolors.ENDC)
             if ver:
-                print(bcolors.OKGREEN+"Message from", str(frmNickname)+":",msg,bcolors.ENDC)
+                if showIndex:
+                    print(bcolors.OKGREEN+str(i)+") Message from", str(frmNickname)+":",msg,bcolors.ENDC)
+                else:
+                    print(bcolors.OKGREEN+"Message from", str(frmNickname)+":",msg,bcolors.ENDC)                
             else:
-                print(bcolors.FAIL+"Bad message from", str(frmNickname)+":",msg,bcolors.ENDC)
+                if showIndex:
+                    print(bcolors.FAIL+str(i)+") Bad message from (maybe fake message?) from", str(frmNickname)+":",msg,bcolors.ENDC)
+                else:
+                    print(bcolors.FAIL+"Bad message (maybe fake message?) from", str(frmNickname)+":",msg,bcolors.ENDC)
             print("")
         except BaseException as err:
             print(bcolors.FAIL+"Decrypting error",err,bcolors.ENDC)
+        i = i+1
 
 while True:
     cmd = menu()
     if cmd == 1:
         sendMsgWizard()
     elif cmd == 2:
+        print("Fetching messages...")
         showReceivedMsgs()
     elif cmd == 3:
+        deleteMessagesWizard()
+    elif cmd == 4:
         print("Exiting...")
         sys.exit(0)

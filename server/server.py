@@ -1,11 +1,22 @@
 from logging import error
 from flask import Flask
 from flask import request
+from hashlib import sha512
+from Crypto.PublicKey import RSA
 import json
 import uuid
 import sys
 import os
 app = Flask(__name__)
+
+def verify(msg, signature, pubKey):
+        try:
+            msg = msg.encode()
+        except:
+            pass
+        hash = int.from_bytes(sha512(msg).digest(), byteorder='big')
+        hashFromSignature = pow(signature, pubKey.e, pubKey.n)
+        return hash==hashFromSignature
 
 try:
     with open("users.json", "r") as file:
@@ -77,11 +88,33 @@ def addUser():
                     file.write('{"status":"OK", "pubKeyID":"'+pubKeyID+'", "nickname":"'+nickname+'", "messages": [] }')
                 return '{"status":"OK", "pubKeyID":"'+pubKeyID+'", "nickname":"'+nickname+'", "messages": [] }'
         except KeyError:
-            return '{"status":"ERR", "error":"RequestKeyNotFound"}'
+            return '{"status":"ERR", "error":"RequestKeyNotFound"}', 404
         except BaseException as err:
             return '{"status":"ERR", "error":"'+err+'"}'
     else:
         return '{"status":"ERR", "error":"ExpectedPostRequest"}'
+
+@app.route("/delete/<pubKeyID>/<msgID>/<pubKeyIDSign>", methods=["GET","DELETE"])
+def delete(pubKeyID, msgID, pubKeyIDSign):
+    if request.method == "GET":
+        return '{"status":"ERR", "error":"ExpectedDELETERequest"}', 405
+    if request.method == "DELETE":
+        try:
+            pubKey = RSA.import_key(bytes.fromhex(pubKeyID))
+            signed = verify(pubKeyID+msgID, int(pubKeyIDSign), pubKey)
+            if not signed:
+                return '{"status":"ERR", "error":"SignatureNotValid"}', 403
+            if signed:
+                with open(get_user_file(pubKeyID)+".msg", "r") as file:
+                    fileText = file.read()
+                    data = json.loads(fileText)
+                print("Deleting message",msgID, file=sys.stderr)
+                data["messages"].pop(int(msgID))
+                with open(get_user_file(pubKeyID)+".msg", "w") as file:
+                    file.write(json.dumps(data))
+                return '{"status":"OK", "pubKeyID":"'+pubKeyID+'", "msgID":"'+msgID+'", "pubKeyIDSign":"'+pubKeyIDSign+'"}', 200
+        except BaseException as err:
+            return '{"status":"ERR", "error":"'+str(err)+'"}', 501
 
 @app.route("/upload/<pubKeyID>", methods = ['POST', 'GET'])
 def upload(pubKeyID):
