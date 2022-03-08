@@ -8,6 +8,7 @@ import argparse
 import random
 import json
 import sys
+import os
 
 ### ONLY IN DEV
 debug = False
@@ -131,6 +132,12 @@ class ComHandler:
     def deleteMessageById(self,msgID, pubKeyID, sign):
         return requests.delete(self.address+"/delete/"+str(pubKeyID)+"/"+str(msgID)+"/"+str(sign))
 
+def clsScreen():
+    if os.name == "nt":
+        os.system("cls")
+    else:
+        os.system("clear")
+
 def check(question, optionA, optionB):
     msg = input(question)
     if msg.lower() == optionA.lower():
@@ -143,6 +150,7 @@ def check(question, optionA, optionB):
 def checkInt(question):
     answer = input(question)
     try:
+        clsScreen()
         return int(answer)
     except:
         print("Please enter a number")
@@ -162,7 +170,7 @@ parser = argparse.ArgumentParser(description='Client for secure communication se
 #parser.add_argument("-s", "--server", action="store", dest="server", default="SecureMessagingServer.honzaled.repl.co:5000", type=str, help="Server to connect to (for example example.com, example.com:8080, 127.0.0.1:5000)")
 
 ##### PRODUCTION SERVER
-parser.add_argument("-s", "--server", action="store", dest="server", default="SecureMessagingServer.honzaled.repl.co", type=str, help="Server to connect to (for example example.com, example.com:8080, 127.0.0.1:5000)")
+parser.add_argument("-s", "--server", action="store", dest="server", default="158.101.173.210:65530", type=str, help="Server to connect to (for example example.com, example.com:8080, 127.0.0.1:5000)")
 
 #### CHECK SERVER
 parser.add_argument("-nc", "--no-check", action="store_true", dest="check", help="Skip server check")
@@ -361,7 +369,11 @@ while True:
         print("Fetching messages...")
         showReceivedMsgs()
     elif cmd == 3:
-        deleteMessagesWizard()
+        try:
+            deleteMessagesWizard()
+        except ValueError:
+            print("You didn't enter a number, please try again!")
+            continue
     elif cmd == 4:
         print("Exiting...")
         sys.exit(0)

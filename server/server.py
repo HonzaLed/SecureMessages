@@ -29,7 +29,7 @@ class NullValueError(Exception):
     def __init__(self):
         print("NullValueError: used value is Null")
 
-def get_user_file(pubKeyID):
+def get_user_file(pubKeyID, new=True):
     usersF = open("users.json", "r")
     userFJson = json.loads(usersF.read())
     users = userFJson["users"]
@@ -38,22 +38,23 @@ def get_user_file(pubKeyID):
     for user in users:
         if user["pubKeyID"] == pubKeyID:
             return user["uuid"]
-    newUuid = str(uuid.uuid4())
-    foundSame = False
-    ifContinue = False
-    while ifContinue!=True:
-        for user in users:
-            if user["uuid"] == newUuid:
-                foundSame = True
-        if foundSame:
-            newUuid = str(uuid.uuid4())
-        else:
-            ifContinue = True
-    users.append({"pubKeyID":pubKeyID, "uuid":newUuid})
-    userFJson["users"] = users
-    usersF = open("users.json", "w")
-    usersF.write(json.dumps(userFJson))
-    return newUuid
+    if new:
+        newUuid = str(uuid.uuid4())
+        foundSame = False
+        ifContinue = False
+        while ifContinue!=True:
+            for user in users:
+                if user["uuid"] == newUuid:
+                    foundSame = True
+            if foundSame:
+                newUuid = str(uuid.uuid4())
+            else:
+                ifContinue = True
+        users.append({"pubKeyID":pubKeyID, "uuid":newUuid})
+        userFJson["users"] = users
+        usersF = open("users.json", "w")
+        usersF.write(json.dumps(userFJson))
+        return newUuid
 
 @app.route("/")
 def index():

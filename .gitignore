@@ -7,3 +7,4 @@ client/__pycache__/*
 server/__pycache__/*
 *auto-py-to-exe*
 client/testwww/*
+client/*.pem
