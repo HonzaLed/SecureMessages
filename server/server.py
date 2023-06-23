@@ -53,7 +53,7 @@ def get_user_file(pubKeyID, new=True):
         users.append({"pubKeyID":pubKeyID, "uuid":newUuid})
         userFJson["users"] = users
         usersF = open("users.json", "w")
-        usersF.write(json.dumps(userFJson))
+        json.dump(userFJson, usersF)
         return newUuid
 
 @app.route("/")
@@ -112,7 +112,7 @@ def delete(pubKeyID, msgID, pubKeyIDSign):
                 print("Deleting message",msgID, file=sys.stderr)
                 data["messages"].pop(int(msgID))
                 with open(get_user_file(pubKeyID)+".msg", "w") as file:
-                    file.write(json.dumps(data))
+                    json.dump(data, file)
                 return '{"status":"OK", "pubKeyID":"'+pubKeyID+'", "msgID":"'+msgID+'", "pubKeyIDSign":"'+pubKeyIDSign+'"}', 200
         except BaseException as err:
             return '{"status":"ERR", "error":"'+str(err)+'"}', 501
@@ -147,7 +147,7 @@ def upload(pubKeyID):
             msgObj["frmPubKeyID"] = frmPubKeyID
             fileJson["messages"].append(msgObj)
             with open(get_user_file(pubKeyID)+".msg", "w") as file:
-                file.write(json.dumps(fileJson))
+                json.dump(fileJson, file)
             return '{"status":"OK", "msg":"'+msg+'", "sign":"'+sign+'", "pubKeyID":"'+pubKeyID+'", "frmPubKeyID":"'+frmPubKeyID+'"}'
         except KeyError:
             return '{"status":"ERR", "error":"RequestKeyNotFound"}'
