@@ -31,7 +31,7 @@ class NullValueError(Exception):
 
 def get_user_file(pubKeyID, new=True):
     usersF = open("users.json", "r")
-    userFJson = json.loads(usersF.read())
+    userFJson = json.load(usersF)
     users = userFJson["users"]
     if pubKeyID is None:
         return users
@@ -108,8 +108,7 @@ def delete(pubKeyID, msgID, pubKeyIDSign):
                 return '{"status":"ERR", "error":"SignatureNotValid"}', 403
             if signed:
                 with open(get_user_file(pubKeyID)+".msg", "r") as file:
-                    fileText = file.read()
-                    data = json.loads(fileText)
+                    data = json.load(file)
                 print("Deleting message",msgID, file=sys.stderr)
                 data["messages"].pop(int(msgID))
                 with open(get_user_file(pubKeyID)+".msg", "w") as file:
