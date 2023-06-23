@@ -34,7 +34,7 @@ class Cipher:
         except:
             pass
         hash = int.from_bytes(sha512(msg).digest(), byteorder='big')
-        if privKey==None:
+        if privKey is None:
             return pow(hash, self.privKey.d, self.privKey.n)
         else:
             return pow(hash, privKey.d, privKey.n)
