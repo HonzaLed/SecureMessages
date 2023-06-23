@@ -33,7 +33,7 @@ def get_user_file(pubKeyID, new=True):
     usersF = open("users.json", "r")
     userFJson = json.loads(usersF.read())
     users = userFJson["users"]
-    if pubKeyID == None:
+    if pubKeyID is None:
         return users
     for user in users:
         if user["pubKeyID"] == pubKeyID:
@@ -42,7 +42,7 @@ def get_user_file(pubKeyID, new=True):
         newUuid = str(uuid.uuid4())
         foundSame = False
         ifContinue = False
-        while ifContinue!=True:
+        while ifContinue is not True:
             for user in users:
                 if user["uuid"] == newUuid:
                     foundSame = True
@@ -138,7 +138,7 @@ def upload(pubKeyID):
                     fileContent = file.read()
             except FileNotFoundError:
                 print("File",get_user_file(pubKeyID)+".msg","not found", file=sys.stderr)
-                if nickname == None:
+                if nickname is None:
                     raise KeyError
                 fileContent = '{"status":"OK", "pubKeyID":"'+pubKeyID+'", "nickname":"'+nickname+'", "messages": [] }'
             fileJson = json.loads(fileContent)
