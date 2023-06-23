@@ -6,7 +6,6 @@ import argparse
 import json
 import uuid
 import sys
-import os
 
 app = Flask(__name__)
 

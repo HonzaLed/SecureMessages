@@ -3,7 +3,6 @@ from Crypto.Cipher import PKCS1_OAEP
 from hashlib import sha512
 from time import sleep
 import requests
-import binascii
 import argparse
 import random
 import json
