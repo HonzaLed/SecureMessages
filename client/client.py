@@ -35,8 +35,7 @@ class Cipher:
         hash = int.from_bytes(sha512(msg).digest(), byteorder='big')
         if privKey is None:
             return pow(hash, self.privKey.d, self.privKey.n)
-        else:
-            return pow(hash, privKey.d, privKey.n)
+        return pow(hash, privKey.d, privKey.n)
     def verify(self, msg, signature, pubKey):
         try:
             msg = msg.encode()
@@ -141,11 +140,10 @@ def check(question, optionA, optionB):
     msg = input(question)
     if msg.lower() == optionA.lower():
         return True
-    elif msg.lower() == optionB.lower():
+    if msg.lower() == optionB.lower():
         return False
-    else:
-        print("Unrecognized option, please try again!")
-        return check(question, optionA, optionB)
+    print("Unrecognized option, please try again!")
+    return check(question, optionA, optionB)
 def checkInt(question):
     answer = input(question)
     try:
