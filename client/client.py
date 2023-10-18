@@ -290,7 +290,7 @@ def sendMsgWizard():
             print(bcolors.FAIL, "Encryption error, your message is too long", bcolors.ENDC)
     except:
         print(bcolors.FAIL, "Unknown encryption error, please try again", bcolors.ENDC)
-    
+
 
 
 def deleteMessagesWizard():
